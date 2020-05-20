@@ -15,17 +15,22 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+/*
+  ptyd note: tcsetattr uses INLINE_SYSCALL to call ioctl, which means we can't
+  inercept it.  Therefore we must intercept tcsetattr itself. Apart from
+  un-inlining it, this code is unchanged from glibc at 765de945.
+*/
+
 #include <errno.h>
 #include <string.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
-#include <sysdep.h>
 
 /* The difference here is that the termios structure used in the
    kernel is not the same as we use in the libc.  Therefore we must
    translate it here.  */
-#include <kernel_termios.h>
+#include "kernel_termios.h"
 
 
 /* This is a gross hack around a kernel bug.  If the cfsetispeed functions
@@ -41,7 +46,7 @@
 
 /* Set the state of FD to *TERMIOS_P.  */
 int
-__tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
+tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
 {
   struct __kernel_termios k_termios;
   unsigned long int cmd;
@@ -58,7 +63,7 @@ __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
       cmd = TCSETSF;
       break;
     default:
-      return INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
+      return -(EINVAL);
     }
 
   k_termios.c_iflag = termios_p->c_iflag & ~IBAUD0;
@@ -66,16 +71,8 @@ __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
   k_termios.c_cflag = termios_p->c_cflag;
   k_termios.c_lflag = termios_p->c_lflag;
   k_termios.c_line = termios_p->c_line;
-#if defined _HAVE_C_ISPEED && defined _HAVE_STRUCT_TERMIOS_C_ISPEED
-  k_termios.c_ispeed = termios_p->c_ispeed;
-#endif
-#if defined _HAVE_C_OSPEED && defined _HAVE_STRUCT_TERMIOS_C_OSPEED
-  k_termios.c_ospeed = termios_p->c_ospeed;
-#endif
   memcpy (&k_termios.c_cc[0], &termios_p->c_cc[0],
 	  __KERNEL_NCCS * sizeof (cc_t));
 
-  return INLINE_SYSCALL (ioctl, 3, fd, cmd, &k_termios);
+  return ioctl(fd, cmd, &k_termios);
 }
-weak_alias (__tcsetattr, tcsetattr)
-libc_hidden_def (tcsetattr)
