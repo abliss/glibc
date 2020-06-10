@@ -16,9 +16,9 @@
    <https://www.gnu.org/licenses/>.  */
 
 /*
-  ptyd note: tcgetattr uses INLINE_SYSCALL to call ioctl, which means we can't
-  inercept it.  Therefore we must intercept tcgetattr itself. Apart from
-  un-inlining it, this code is unchanged from glibc at 765de945.
+  upty note: tcgetattr uses INLINE_SYSCALL to call ioctl, which we can't
+  inercept.  Therefore we must intercept tcgetattr itself. Apart from
+  un-inlining ioctl, this code is unchanged from glibc at 765de945.
 */
 #include <errno.h>
 #include <string.h>
@@ -41,7 +41,6 @@ tcgetattr (int fd, struct termios *termios_p)
   struct __kernel_termios k_termios;
   int retval;
 
-  fprintf(stderr, "XXXX intercepted tcgetattr %d\n", fd);
   retval = ioctl(fd, TCGETS, &k_termios);
 
   if (__glibc_likely (retval == 0))

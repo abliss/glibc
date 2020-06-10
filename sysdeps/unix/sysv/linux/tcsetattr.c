@@ -16,9 +16,9 @@
    <http://www.gnu.org/licenses/>.  */
 
 /*
-  ptyd note: tcsetattr uses INLINE_SYSCALL to call ioctl, which means we can't
-  inercept it.  Therefore we must intercept tcsetattr itself. Apart from
-  un-inlining it, this code is unchanged from glibc at 765de945.
+  upty note: tcsetattr uses INLINE_SYSCALL to call ioctl, which we can't
+  inercept.  Therefore we must intercept tcgetattr itself. Apart from
+  un-inlining ioctl, this code is unchanged from glibc at 765de945.
 */
 
 #include <errno.h>
